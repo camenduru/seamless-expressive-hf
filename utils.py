@@ -1,3 +1,24 @@
+import torch
+import torchaudio
+from fairseq2.assets import InProcAssetMetadataProvider, asset_store
+from fairseq2.data import Collater, SequenceData
+from fairseq2.data.audio import (
+    AudioDecoder,
+    WaveformToFbankConverter,
+    WaveformToFbankOutput,
+)
+from fairseq2.generation import SequenceGeneratorOptions
+from fairseq2.memory import MemoryBlock
+from fairseq2.typing import DataType, Device
+from huggingface_hub import snapshot_download
+from seamless_communication.inference import BatchedSpeechOutput, Translator
+from seamless_communication.models.generator.loader import load_pretssel_vocoder_model
+from seamless_communication.models.unity import (
+    UnitTokenizer,
+    load_gcmvn_stats,
+    load_unity_text_tokenizer,
+    load_unity_unit_tokenizer,
+)
 from torch.nn import Module
 
 class PretsselGenerator(Module):
