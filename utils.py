@@ -1,4 +1,4 @@
-
+from torch.nn import Module
 
 class PretsselGenerator(Module):
     def __init__(
