@@ -126,7 +126,7 @@ def normalize_fbank(data: WaveformToFbankOutput) -> WaveformToFbankOutput:
 collate = Collater(pad_value=0, pad_to_multiple=1)
 
 
-AUDIO_SAMPLE_RATE = 44100
+AUDIO_SAMPLE_RATE = 16000
 MAX_INPUT_AUDIO_LENGTH = 60  # in seconds
 
 
