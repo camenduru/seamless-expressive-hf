@@ -129,6 +129,11 @@ collate = Collater(pad_value=0, pad_to_multiple=1)
 AUDIO_SAMPLE_RATE = 16000
 MAX_INPUT_AUDIO_LENGTH = 60  # in seconds
 
+def remove_prosody_tokens_from_text(text):
+    # filter out prosody tokens, there is only emphasis '*', and pause '='
+    text = text.replace("*", "").replace("=", "")
+    text = ' '.join(text.split())
+    return text
 
 def preprocess_audio(input_audio_path: str) -> None:
     arr, org_sr = torchaudio.load(input_audio_path)
@@ -177,7 +182,10 @@ def run(input_audio_path: str, target_language: str) -> tuple[str, str]:
             speech_output.audio_wavs[0][0].to(torch.float32).cpu(),
             sample_rate=speech_output.sample_rate,
         )
-    return f.name, str(text_output[0])
+    
+    text_out = remove_prosody_tokens_from_text(str(text_output[0]))
+    
+    return f.name, text_out
 
 
 TARGET_LANGUAGE_NAMES = [
@@ -212,7 +220,6 @@ with gr.Blocks(css="style.css") as demo:
     gr.Examples(
         examples=[
             ["assets/sample_input.mp3", "French"],
-            ["assets/sample_input.mp3", "Mandarin Chinese"],
             ["assets/sample_input_2.mp3", "French"],
             ["assets/sample_input_2.mp3", "Spanish"],
         ],
