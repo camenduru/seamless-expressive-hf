@@ -184,8 +184,6 @@ TARGET_LANGUAGE_NAMES = [
     "English",
     "French",
     "German",
-    "Italian",
-    "Mandarin Chinese",
     "Spanish",
 ]
 
