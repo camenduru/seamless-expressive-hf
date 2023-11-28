@@ -28,7 +28,8 @@ from seamless_communication.models.unity import (
 )
 from torch.nn import Module
 
-from utils import PretsselGenerator, LANGUAGE_CODE_TO_NAME
+from seamless_communication.inference.pretssel_generator import PretsselGenerator
+from utils import LANGUAGE_CODE_TO_NAME
 
 DESCRIPTION = """\
 # Seamless Expressive
