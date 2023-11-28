@@ -1,38 +1,40 @@
-# import torch
-# import torchaudio
-# from fairseq2.assets import InProcAssetMetadataProvider, asset_store
-# from fairseq2.data import Collater, SequenceData
-# from fairseq2.data.audio import (
-#     AudioDecoder,
-#     WaveformToFbankConverter,
-#     WaveformToFbankOutput,
-# )
-# from fairseq2.generation import SequenceGeneratorOptions
-# from fairseq2.memory import MemoryBlock
-# from fairseq2.typing import DataType, Device
-# from huggingface_hub import snapshot_download
-# from seamless_communication.inference import BatchedSpeechOutput, Translator
-# from seamless_communication.models.generator.loader import load_pretssel_vocoder_model
-# from seamless_communication.models.unity import (
-#     UnitTokenizer,
-#     load_gcmvn_stats,
-#     load_unity_text_tokenizer,
-#     load_unity_unit_tokenizer,
-# )
-# from torch.nn import Module
+import torch
+import torchaudio
+from fairseq2.assets import InProcAssetMetadataProvider, asset_store
+from fairseq2.data import Collater, SequenceData
+from fairseq2.data.audio import (
+    AudioDecoder,
+    WaveformToFbankConverter,
+    WaveformToFbankOutput,
+)
+from seamless_communication.toxicity import load_etox_bad_word_checker
+from fairseq2.memory import MemoryBlock
+from fairseq2.typing import DataType, Device
+from huggingface_hub import snapshot_download
+from seamless_communication.inference import BatchedSpeechOutput, Translator
+from seamless_communication.models.generator.loader import load_pretssel_vocoder_model
+from seamless_communication.models.unity import (
+    UnitTokenizer,
+    load_gcmvn_stats,
+    load_unity_text_tokenizer,
+    load_unity_unit_tokenizer,
+)
+from torch.nn import Module
 
-# class PretsselGenerator(Module):
-#     def __init__(
-#         self,
-#         pretssel_name_or_card: str,
-#         unit_tokenizer: UnitTokenizer,
-#         device: Device,
-#         dtype: DataType = torch.float16,
-#     ):
-#         super().__init__()
-#         # Load the model.
-#         if device == torch.device("cpu"):
-#             dtype = torch.float32
+
+class PretsselGenerator(Module):
+    def __init__(
+        self,
+        pretssel_name_or_card: str,
+        unit_tokenizer: UnitTokenizer,
+        device: Device,
+        dtype: DataType = torch.float16,
+    ):
+        super().__init__()
+        # Load the model.
+        if device == torch.device("cpu"):
+            dtype = torch.float32
+
 
 #         self.device = device
 #         self.dtype = dtype
