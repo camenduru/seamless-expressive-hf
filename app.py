@@ -14,7 +14,9 @@ from fairseq2.data.audio import (
     WaveformToFbankConverter,
     WaveformToFbankOutput,
 )
-from fairseq2.generation import SequenceGeneratorOptions
+
+from seamless_communication.inference import SequenceGeneratorOptions
+from fairseq2.generation import NGramRepeatBlockProcessor
 from fairseq2.memory import MemoryBlock
 from fairseq2.typing import DataType, Device
 from huggingface_hub import snapshot_download
@@ -41,6 +43,7 @@ CACHE_EXAMPLES = os.getenv("CACHE_EXAMPLES") == "1" and torch.cuda.is_available(
 CHECKPOINTS_PATH = pathlib.Path(os.getenv("CHECKPOINTS_PATH", "/home/user/app/models"))
 if not CHECKPOINTS_PATH.exists():
     snapshot_download(repo_id="meta-private/SeamlessExpressive", repo_type="model", local_dir=CHECKPOINTS_PATH)
+    snapshot_download(repo_id="meta-private/M4Tv2", repo_type="model", local_dir=CHECKPOINTS_PATH)
 
 # Ensure that we do not have any other environment resolvers and always return
 # "demo" for demo purposes.
@@ -58,6 +61,11 @@ demo_metadata = [
     {
         "name": "vocoder_pretssel@demo",
         "checkpoint": f"file://{CHECKPOINTS_PATH}/pretssel_melhifigan_wm-final.pt",
+    },
+    {
+        "name": "seamlessM4T_v2_large@demo",
+        "checkpoint": f"file://{CHECKPOINTS_PATH}/seamlessM4T_v2_large.pt",
+        "char_tokenizer": f"file://{CHECKPOINTS_PATH}/spm_char_lang38_tc.model",
     },
 ]
 
@@ -77,6 +85,14 @@ else:
 MODEL_NAME = "seamless_expressivity"
 VOCODER_NAME = "vocoder_pretssel"
 
+# used for ASR for toxicity
+m4t_translator = Translator(
+    model_name_or_card="seamlessM4T_v2_large",
+    vocoder_name_or_card=None,
+    device=device,
+    dtype=dtype,
+)
+
 text_tokenizer = load_unity_text_tokenizer(MODEL_NAME)
 unit_tokenizer = load_unity_unit_tokenizer(MODEL_NAME)
 
@@ -90,11 +106,20 @@ translator = Translator(
     device=device,
     text_tokenizer=text_tokenizer,
     dtype=dtype,
+    apply_mintox=True,
 )
 
 text_generation_opts, unit_generation_opts = SequenceGeneratorOptions(
     beam_size=5, soft_max_seq_len=None
 ), SequenceGeneratorOptions(beam_size=5, soft_max_seq_len=(25, 50))
+
+m4t_text_generation_opts = SequenceGeneratorOptions(
+    beam_size=5,
+    soft_max_seq_len=(1, 200),
+    step_processor=NGramRepeatBlockProcessor(
+        ngram_size=10,
+    ),
+)
 
 pretssel_generator = PretsselGenerator(
     VOCODER_NAME,
@@ -129,11 +154,13 @@ collate = Collater(pad_value=0, pad_to_multiple=1)
 AUDIO_SAMPLE_RATE = 16000
 MAX_INPUT_AUDIO_LENGTH = 60  # in seconds
 
+
 def remove_prosody_tokens_from_text(text):
     # filter out prosody tokens, there is only emphasis '*', and pause '='
     text = text.replace("*", "").replace("=", "")
-    text = ' '.join(text.split())
+    text = " ".join(text.split())
     return text
+
 
 def preprocess_audio(input_audio_path: str) -> None:
     arr, org_sr = torchaudio.load(input_audio_path)
@@ -145,8 +172,13 @@ def preprocess_audio(input_audio_path: str) -> None:
     torchaudio.save(input_audio_path, new_arr, sample_rate=AUDIO_SAMPLE_RATE)
 
 
-def run(input_audio_path: str, target_language: str) -> tuple[str, str]:
+def run(
+    input_audio_path: str,
+    target_language: str,
+    source_language: str,
+) -> tuple[str, str]:
     target_language_code = LANGUAGE_NAME_TO_CODE[target_language]
+    source_language_code = LANGUAGE_NAME_TO_CODE[source_language]
 
     preprocess_audio(input_audio_path)
 
@@ -158,17 +190,27 @@ def run(input_audio_path: str, target_language: str) -> tuple[str, str]:
     example = normalize_fbank(example)
     example = collate(example)
 
+    # get transcription for mintox
+    source_sentences, _ = m4t_translator.predict(
+        input=example["fbank"],
+        task_str="S2TT",  # get source text
+        tgt_lang=source_language_code,
+        text_generation_opts=m4t_text_generation_opts,
+    )
+    source_text = str(source_sentences[0])
+
     prosody_encoder_input = example["gcmvn_fbank"]
     text_output, unit_output = translator.predict(
         example["fbank"],
         "S2ST",
         target_language_code,
-        src_lang=None,
+        src_lang=source_language_code,
         text_generation_opts=text_generation_opts,
         unit_generation_opts=unit_generation_opts,
         unit_generation_ngram_filtering=False,
         duration_factor=1.0,
         prosody_encoder_input=prosody_encoder_input,
+        src_text=source_text,  # for mintox check
     )
     speech_output = pretssel_generator.predict(
         unit_output.units,
@@ -182,9 +224,9 @@ def run(input_audio_path: str, target_language: str) -> tuple[str, str]:
             speech_output.audio_wavs[0][0].to(torch.float32).cpu(),
             sample_rate=speech_output.sample_rate,
         )
-    
+
     text_out = remove_prosody_tokens_from_text(str(text_output[0]))
-    
+
     return f.name, text_out
 
 
@@ -206,6 +248,11 @@ with gr.Blocks(css="style.css") as demo:
         with gr.Column():
             with gr.Group():
                 input_audio = gr.Audio(label="Input speech", type="filepath")
+                source_language = gr.Dropdown(
+                    label="Source language",
+                    choices=TARGET_LANGUAGE_NAMES,
+                    value="English",
+                )
                 target_language = gr.Dropdown(
                     label="Target language",
                     choices=TARGET_LANGUAGE_NAMES,
@@ -223,7 +270,7 @@ with gr.Blocks(css="style.css") as demo:
             ["assets/sample_input_2.mp3", "French"],
             ["assets/sample_input_2.mp3", "Spanish"],
         ],
-        inputs=[input_audio, target_language],
+        inputs=[input_audio, target_language, source_language],
         outputs=[output_audio, output_text],
         fn=run,
         cache_examples=CACHE_EXAMPLES,
@@ -232,7 +279,7 @@ with gr.Blocks(css="style.css") as demo:
 
     btn.click(
         fn=run,
-        inputs=[input_audio, target_language],
+        inputs=[input_audio, target_language, source_language],
         outputs=[output_audio, output_text],
         api_name="run",
     )

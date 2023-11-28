@@ -7,7 +7,7 @@ from fairseq2.data.audio import (
     WaveformToFbankConverter,
     WaveformToFbankOutput,
 )
-from fairseq2.generation import SequenceGeneratorOptions
+from seamless_communication.toxicity import load_etox_bad_word_checker
 from fairseq2.memory import MemoryBlock
 from fairseq2.typing import DataType, Device
 from huggingface_hub import snapshot_download
@@ -20,6 +20,7 @@ from seamless_communication.models.unity import (
     load_unity_unit_tokenizer,
 )
 from torch.nn import Module
+
 
 class PretsselGenerator(Module):
     def __init__(
