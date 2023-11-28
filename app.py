@@ -14,11 +14,11 @@ from fairseq2.data.audio import (
     WaveformToFbankConverter,
     WaveformToFbankOutput,
 )
-from fairseq2.generation import SequenceGeneratorOptions
+
 from fairseq2.memory import MemoryBlock
 from fairseq2.typing import DataType, Device
 from huggingface_hub import snapshot_download
-from seamless_communication.inference import BatchedSpeechOutput, Translator
+from seamless_communication.inference import BatchedSpeechOutput, Translator, SequenceGeneratorOptions,
 from seamless_communication.models.generator.loader import load_pretssel_vocoder_model
 from seamless_communication.models.unity import (
     UnitTokenizer,
