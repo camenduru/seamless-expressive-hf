@@ -113,7 +113,8 @@ translator = Translator(
 
 text_generation_opts = SequenceGeneratorOptions(
     beam_size=5, 
-    soft_max_seq_len=(1, 200),
+    unk_penalty=torch.inf,
+    soft_max_seq_len=(0, 200),
     step_processor=NGramRepeatBlockProcessor(
         ngram_size=10,
     )
@@ -169,7 +170,7 @@ collate = Collater(pad_value=0, pad_to_multiple=1)
 
 
 AUDIO_SAMPLE_RATE = 16000
-MAX_INPUT_AUDIO_LENGTH = 60  # in seconds
+MAX_INPUT_AUDIO_LENGTH = 10  # in seconds
 
 
 def remove_prosody_tokens_from_text(text):
