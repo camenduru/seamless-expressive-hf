@@ -8,7 +8,7 @@ import gradio as gr
 import torch
 import torchaudio
 from fairseq2.assets import InProcAssetMetadataProvider, asset_store
-from fairseq2.data import Collater, SequenceData
+from fairseq2.data import Collater, SequenceData, VocabularyInfo
 from fairseq2.data.audio import (
     AudioDecoder,
     WaveformToFbankConverter,
@@ -29,8 +29,9 @@ from seamless_communication.models.unity import (
     load_unity_unit_tokenizer,
 )
 from torch.nn import Module
-
-from seamless_communication.inference.pretssel_generator import PretsselGenerator
+from seamless_communication.cli.expressivity.evaluate.pretssel_inference_helper import (
+    PretsselGenerator,
+)
 from utils import LANGUAGE_CODE_TO_NAME
 
 DESCRIPTION = """\
@@ -107,14 +108,17 @@ translator = Translator(
     device=device,
     text_tokenizer=text_tokenizer,
     dtype=dtype,
-    apply_mintox=True,
+    apply_mintox=False,
 )
 
-text_generation_opts, unit_generation_opts = SequenceGeneratorOptions(
-    beam_size=5, soft_max_seq_len=None
-), SequenceGeneratorOptions(beam_size=5, soft_max_seq_len=(25, 50))
-
-m4t_text_generation_opts = SequenceGeneratorOptions(
+text_generation_opts = SequenceGeneratorOptions(
+    beam_size=5, 
+    soft_max_seq_len=(1, 200),
+    step_processor=NGramRepeatBlockProcessor(
+        ngram_size=10,
+    )
+)
+unit_generation_opts = SequenceGeneratorOptions(
     beam_size=5,
     soft_max_seq_len=(1, 200),
     step_processor=NGramRepeatBlockProcessor(
@@ -122,9 +126,21 @@ m4t_text_generation_opts = SequenceGeneratorOptions(
     ),
 )
 
+m4t_text_generation_opts = SequenceGeneratorOptions(
+    beam_size=5,
+    unk_penalty=torch.inf,
+    soft_max_seq_len=(1, 200),
+    step_processor=NGramRepeatBlockProcessor(
+        ngram_size=10,  
+    ),
+)
+
+vocab_info = VocabularyInfo(
+    size=10004, unk_idx=3, bos_idx=0, eos_idx=2, pad_idx=1
+)
 pretssel_generator = PretsselGenerator(
     VOCODER_NAME,
-    unit_tokenizer=unit_tokenizer,
+    vocab_info=vocab_info,
     device=device,
     dtype=dtype,
 )
@@ -204,7 +220,7 @@ def run(
     text_output, unit_output = translator.predict(
         example["fbank"],
         "S2ST",
-        target_language_code,
+        tgt_lang=target_language_code,
         src_lang=source_language_code,
         text_generation_opts=text_generation_opts,
         unit_generation_opts=unit_generation_opts,
