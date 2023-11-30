@@ -271,7 +271,7 @@ with gr.Blocks(css="style.css") as demo:
                 )
                 target_language = gr.Dropdown(
                     label="Target language",
-                    choices=UPDATED_LANGUAGE_LIST["English"],
+                    choices=TARGET_LANGUAGE_NAMES,
                     value="French",
                     interactive=True,
                 )
