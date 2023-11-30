@@ -248,7 +248,10 @@ UPDATED_LANGUAGE_LIST = {
 }
 
 def rs_change(rs):
-    return gr.update(choices=UPDATED_LANGUAGE_LIST[rs], value=None)
+    return gr.update(
+        choices=UPDATED_LANGUAGE_LIST[rs],
+        value=UPDATED_LANGUAGE_LIST[rs][0],
+    )
 
 with gr.Blocks(css="style.css") as demo:
     gr.Markdown(DESCRIPTION)
