@@ -270,6 +270,7 @@ with gr.Blocks(css="style.css") as demo:
                     label="Target language",
                     choices=TARGET_LANGUAGE_NAMES,
                     value="French",
+                    interactive=True,
                 )
                 source_language.change(
                     fn=rs_change, 
