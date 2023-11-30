@@ -240,6 +240,16 @@ TARGET_LANGUAGE_NAMES = [
     "Spanish",
 ]
 
+UPDATED_LANGUAGE_LIST = {
+    "English": ["French", "German", "Spanish"],
+    "French": ["English", "German", "Spanish"],
+    "German": ["English", "French", "Spanish"],
+    "Spanish": ["English", "French", "German"],
+}
+
+def rs_change(rs):
+    return gr.update(choices=UPDATED_LANGUAGE_LIST[rs], value=None)
+
 with gr.Blocks(css="style.css") as demo:
     gr.Markdown(DESCRIPTION)
     gr.DuplicateButton(
@@ -261,6 +271,12 @@ with gr.Blocks(css="style.css") as demo:
                     choices=TARGET_LANGUAGE_NAMES,
                     value="French",
                 )
+                source_language.change(
+                    fn=rs_change, 
+                    inputs=[source_language], 
+                    outputs=[target_language],
+                )
+                
             btn = gr.Button()
         with gr.Column():
             with gr.Group():
