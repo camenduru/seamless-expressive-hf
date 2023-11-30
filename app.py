@@ -289,10 +289,10 @@ with gr.Blocks(css="style.css") as demo:
 
     gr.Examples(
         examples=[
-            ["assets/Excited-Es.wav", "English", "Spanish"],
-            ["assets/whisper.wav", "English", "French"],
-            ["assets/FastTalking-En.wav", "French", "English"],
-            ["assets/Sad-Es.wav", "English", "Spanish"],
+            ["assets/Excited-English.wav", "English", "Spanish"],
+            ["assets/Whisper-English.wav", "English", "German"],
+            ["assets/FastTalking-French.wav", "French", "English"],
+            ["assets/Sad-English.wav", "English", "Spanish"],
         ],
         inputs=[input_audio, source_language, target_language],
         outputs=[output_audio, output_text],
