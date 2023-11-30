@@ -290,6 +290,7 @@ with gr.Blocks(css="style.css") as demo:
     gr.Examples(
         examples=[
             ["assets/Excited-Es.wav", "English", "Spanish"],
+            ["assets/whisper.wav", "English", "French"],
             ["assets/FastTalking-En.wav", "French", "English"],
             ["assets/Sad-Es.wav", "English", "Spanish"],
         ],
