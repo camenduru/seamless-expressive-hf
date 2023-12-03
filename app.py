@@ -34,18 +34,11 @@ from seamless_communication.cli.expressivity.evaluate.pretssel_inference_helper 
 from utils import LANGUAGE_CODE_TO_NAME
 
 DESCRIPTION = """\
-# Seamless Expressive
+# Seamless Expressive v2
 
 
 [SeamlessExpressive](https://github.com/facebookresearch/seamless_communication/blob/main/docs/expressive/README.md) is a speech-to-speech translation model that captures certain underexplored aspects of prosody such as speech rate and pauses, while preserving the style of one's voice and high content translation quality.
 """
-
-CACHE_EXAMPLES = os.getenv("CACHE_EXAMPLES") == "1" and torch.cuda.is_available()
-
-CHECKPOINTS_PATH = pathlib.Path(os.getenv("CHECKPOINTS_PATH", "/home/user/app/models"))
-if not CHECKPOINTS_PATH.exists():
-    snapshot_download(repo_id="facebook/seamless-expressive", repo_type="model", local_dir=CHECKPOINTS_PATH)
-    snapshot_download(repo_id="facebook/seamless-m4t-v2-large", repo_type="model", local_dir=CHECKPOINTS_PATH)
 
 # Ensure that we do not have any other environment resolvers and always return
 # "demo" for demo purposes.
@@ -57,17 +50,17 @@ asset_store.env_resolvers.append(lambda: "demo")
 demo_metadata = [
     {
         "name": "seamless_expressivity@demo",
-        "checkpoint": f"file://{CHECKPOINTS_PATH}/m2m_expressive_unity.pt",
-        "char_tokenizer": f"file://{CHECKPOINTS_PATH}/spm_char_lang38_tc.model",
+        "checkpoint": f"/content/models/m2m_expressive_unity.pt",
+        "char_tokenizer": f"/content/models/spm_char_lang38_tc.model",
     },
     {
         "name": "vocoder_pretssel@demo",
-        "checkpoint": f"file://{CHECKPOINTS_PATH}/pretssel_melhifigan_wm-final.pt",
+        "checkpoint": f"/content/models/pretssel_melhifigan_wm-final.pt",
     },
     {
         "name": "seamlessM4T_v2_large@demo",
-        "checkpoint": f"file://{CHECKPOINTS_PATH}/seamlessM4T_v2_large.pt",
-        "char_tokenizer": f"file://{CHECKPOINTS_PATH}/spm_char_lang38_tc.model",
+        "checkpoint": f"/content/models/seamlessM4T_v2_large.pt",
+        "char_tokenizer": f"/content/models/spm_char_lang38_tc.model",
     },
 ]
 
@@ -297,7 +290,6 @@ with gr.Blocks(css="style.css") as demo:
         inputs=[input_audio, source_language, target_language],
         outputs=[output_audio, output_text],
         fn=run,
-        cache_examples=CACHE_EXAMPLES,
         api_name=False,
     )
 
@@ -309,4 +301,4 @@ with gr.Blocks(css="style.css") as demo:
     )
 
 if __name__ == "__main__":
-    demo.queue(max_size=50).launch()
+    demo.queue(max_size=50).launch(share=True)
